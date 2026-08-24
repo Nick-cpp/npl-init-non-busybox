@@ -2,7 +2,7 @@ BUSYBOX_BUILD_DIR = $(CURDIR)/busybox-1.36.1
 NPLI_DIR = $(DESTDIR)/etc/npl-init
 
 all:
-	cp .config "$(BUSYBOX_BUILD_DIR)/.config"
+	cp config "$(BUSYBOX_BUILD_DIR)/.config"
 	$(MAKE) -C "$(BUSYBOX_BUILD_DIR)"
 
 install:
