@@ -1,0 +1,16 @@
+#!/bin/sh
+
+start () {
+
+    /lib/systemd/systemd-udevd --daemon >> /etc/npl-init/log 2>&1
+
+    udevadm trigger --type=subsystems --action=add >> /etc/npl-init/log 2>&1
+    udevadm trigger --type=devices --action=add >> /etc/npl-init/log 2>&1
+
+    udevadm settle >> /etc/npl-init/log 2>&1
+}
+
+stop () {
+    udevadm control --exit >> /etc/npl-init/log 2>&1
+    pkill -f systemd-udevd
+}
