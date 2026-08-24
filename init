@@ -1,0 +1,73 @@
+#!/bin/sh
+
+dmesg -n 1
+
+. /etc/npl-init/lib
+
+trap 'shutdown' TERM INT USR1 USR2
+
+clear
+
+printf "Starting up \033[1;32mGentoo Linux\033[0m\n"
+
+log "Mounting pseudo file systems"
+
+mnt nosuid,noexec,nodev    proc     proc /proc
+mnt nosuid,noexec,nodev    sysfs    sys  /sys
+mnt mode=0755,nosuid       devtmpfs dev  /dev
+mnt mode=0755,nosuid,nodev tmpfs    run  /run
+
+mkdir -p /run/user /run/lock /run/log /dev/pts /dev/shm
+
+mnt mode=0620,gid=5,nosuid,noexec devpts devpts /dev/pts
+mnt mode=1777,nosuid,nodev        tmpfs  shm    /dev/shm
+
+ln -snf /proc/self/fd /dev/fd
+ln -snf /proc/self/fd/0 /dev/stdin
+ln -snf /proc/self/fd/1 /dev/stdout
+ln -snf /proc/self/fd/2 /dev/stderr
+
+log "Checking file systems"
+fsck -pACT > /dev/null
+
+log "Remounting rootfs as rw"
+mount -o remount,rw /
+
+log "Mounting all local filesystems"
+mount -a
+swapon -a
+
+rm -f /halt
+rm -f /etc/npl-init/log
+
+log "Setting up loopback interface"
+ip link set lo up
+
+log "Setting hostname"
+if [ -r /etc/hostname ]; then
+    hostname -F /etc/hostname
+else
+    hostname NPL
+fi
+
+upt=$(awk '{print $1}' /proc/uptime)
+log "Booted in $upt seconds"
+
+acpid >> /etc/npl-init/log 2>&1 &
+
+log "Running default services"
+while IFS= read -r line; do
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+
+    case "$line" in
+        ''|\#*) continue ;;
+    esac
+
+    log "Starting $line"
+    npli -s "$line"
+done < /etc/npl-init/sv/DEFAULT
+
+while true; do
+    sleep 10000 & wait $!
+done

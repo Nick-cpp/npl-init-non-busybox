@@ -1,0 +1,72 @@
+#!/bin/sh
+
+log() {
+    msg="$1"; shift
+    printf " (\033[0;35m*\033[0;0m) " # decor
+    printf "%s\n" "$msg"
+}
+
+mounted() {
+    [ -e "$1" ]         || return 1
+    [ -e /proc/mounts ] || return 1
+
+    while read -r _ target _; do
+        [ "$target" = "$1" ] && return 0
+    done < /proc/mounts
+
+    return 1
+}
+
+mnt() {
+    mounted "$4" && set -- "remount,$1" "$2" "$3" "$4"
+    mount -o "$1" -t "$2" "$3" "$4"
+}
+
+die() {
+    log "$1" >&2
+    exit "${2:-1}"
+}
+
+
+shutdown() {
+
+    kill -15 -1 >> /etc/npl-init/log 2>&1
+    sleep 1
+    kill -9 -1 >> /etc/npl-init/log 2>&1
+
+    log "Disabling swap"
+    swapoff -a
+
+    log "Cleaning /tmp"
+    find /tmp -mindepth 1 -delete
+
+    ACTION="$(cat /halt 2>>/etc/npl-init/log)"
+
+    rm -f /halt
+    rm -f /etc/npl-init/log
+
+    log "Flushing file buffers to disk"
+    sync
+
+    log "Unmounting filesystems"
+    umount -rat nosysfs,noproc,nodevtmpfs,tmpfs
+
+    log "Remounting rootfs as ro"
+    mount -o ro,remount /
+
+    sync
+
+    echo 1 > /proc/sys/kernel/sysrq
+    case "$ACTION" in
+        poweroff|shutdown|halt)
+            log "Telling kernel to poweroff"
+            echo o > /proc/sysrq-trigger
+            ;;
+        reboot|*)
+            log "Telling kernel to reboot"
+            echo b > /proc/sysrq-trigger
+            ;;
+    esac
+
+    sleep 10
+}
