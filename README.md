@@ -20,7 +20,7 @@ cd npl-init
 Before building, download and extract the required BusyBox source:
 
 ```bash
-wget [https://busybox.net/downloads/busybox-1.36.1.tar.bz2](https://busybox.net/downloads/busybox-1.36.1.tar.bz2)
+wget https://busybox.net/downloads/busybox-1.36.1.tar.bz2
 tar -xf busybox-1.36.1.tar.bz2
 ```
 
