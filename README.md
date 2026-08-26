@@ -38,7 +38,7 @@ make
 
 To install directly into the running root system (`/`):
 
-> Don't worry coreutils won't be overtired by busybox. It will install only acpid and getty
+> Don't worry coreutils won't be overwrited by busybox. It will install only acpid and getty
 
 ```bash
 make install
